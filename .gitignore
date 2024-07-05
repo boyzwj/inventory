@@ -31,3 +31,4 @@ circular_buffer_rs-*.tar
 
 /priv/native/*
 /native/*/target/*
+/native/*/native

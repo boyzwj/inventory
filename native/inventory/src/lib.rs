@@ -1,11 +1,11 @@
 use dashmap::DashMap;
 use rustler::{Atom, Env, Term};
-// use rustler::types::tuple::get_tuple;
+use rustler::types::tuple::get_tuple;
 use rustler::resource::ResourceArc;
 use std::sync::RwLock;
 mod item;
 use crate::item::Item;
-
+use crate::item::Op;
 mod atoms {
     rustler::atoms! {
         // Common Atoms
@@ -40,7 +40,9 @@ rustler::init!("Elixir.Inventory.Native", [
     get_by_type,
     get_by_cfg_id,
     enough,
-    to_list
+    to_list,
+    test_ops,
+    do_ops
     ],
     load = load);
 
@@ -202,4 +204,73 @@ fn to_list(resource: ResourceArc<BagResource>) -> Vec<Item> {
     bag.to_list()
 }
 
+#[rustler::nif]
+fn test_ops(resource: ResourceArc<BagResource>, term: Term) -> Result<Vec<Op>,Atom>{
+    let ops = match convert_ops(&term) {
+        None => return Err(atoms::unsupported_type()),
+        Some(term) => term
+    };
+    Ok(ops)
 
+}
+
+#[rustler::nif]
+fn do_ops(resource: ResourceArc<BagResource>, term: Term) -> Result<Vec<Op>,Atom>{
+    let ops = match convert_ops(&term) {
+        None => return Err(atoms::unsupported_type()),
+        Some(term) => term
+    };
+    Ok(ops)
+}
+
+fn convert_ops(term: &Term) -> Option<Vec<Op>>{
+    if term.is_list() {
+         match term.decode::<Vec<Term>>(){
+            Ok(l) =>{
+                let mut ops = Vec::new();
+                for item in l {
+                    if let Ok(op) = convert_term_to_op(&item) {
+                        ops.push(op);
+                    } else {
+                        return None;
+                    }
+                }
+                Some(ops)
+            }
+            Err(_) => None,
+         }
+    }
+    else {
+        None
+    }
+}
+
+fn convert_term_to_op(term: &Term) -> Result<Op, Atom> {
+    if term.is_tuple(){
+        match get_tuple(*term) {
+            Ok(t) => {
+                if t.len() == 3 
+                {
+                    if t[0].is_binary() && t[1].is_integer() && t[2].is_integer() 
+                    {
+                        let token: String = t[0].decode().unwrap();
+                        let op_type: u32 = t[1].decode().unwrap();
+                        let amount: u64 = t[2].decode().unwrap();
+                        Ok(Op {token,op_type,amount})
+                    }
+                    else {
+                        Err(atoms::unsupported_type())
+                    }
+                }
+                else {
+                    Err(atoms::unsupported_type())
+                }
+            }
+            Err(_) => Err(atoms::unsupported_type())
+        }
+    }
+    else {
+        Err(atoms::unsupported_type())
+    }
+
+}

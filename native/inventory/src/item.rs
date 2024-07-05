@@ -22,3 +22,15 @@ impl Encoder for Item {
         (self.token.encode(env),self.type_id,self.cfg_id,self.amount).encode(env)
     }
 }
+
+pub struct Op{
+    pub token: String,
+    pub op_type: u32,
+    pub amount: u64
+}
+
+impl Encoder for Op{
+    fn encode<'a>(&self, env: Env<'a>) -> Term<'a> {
+        (self.token.encode(env),self.op_type,self.amount).encode(env)
+    }
+}

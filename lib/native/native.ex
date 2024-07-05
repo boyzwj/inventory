@@ -34,4 +34,6 @@ defmodule Inventory.Native do
   def to_list(_ref), do: :erlang.nif_error(:nif_not_loaded)
 
   def cost(_ref, _token, _amount), do: :erlang.nif_error(:nif_not_loaded)
+
+  def test_ops(_ref, _ops), do: :erlang.nif_error(:nif_not_loaded)
 end

@@ -24,4 +24,6 @@ defmodule Inventory do
       _ -> false
     end
   end
+
+  defdelegate test_ops(ref, ops), to: Native
 end
