@@ -29,11 +29,17 @@ defmodule Inventory.Native do
 
   def get_by_cfg_id(_ref, _cfg_id), do: :erlang.nif_error(:nif_not_loaded)
 
-  def enough(_ref, _cfg_id, _amount), do: :erlang.nif_error(:nif_not_loaded)
+  def amount(_ref, _token), do: :erlang.nif_error(:nif_not_loaded)
+
+  def amount_by_type(_ref, _type), do: :erlang.nif_error(:nif_not_loaded)
+
+  def amount_by_cfg_id(_ref, _cfg_id), do: :erlang.nif_error(:nif_not_loaded)
 
   def to_list(_ref), do: :erlang.nif_error(:nif_not_loaded)
 
   def cost(_ref, _token, _amount), do: :erlang.nif_error(:nif_not_loaded)
 
-  def test_ops(_ref, _ops), do: :erlang.nif_error(:nif_not_loaded)
+  def verify_ops(_ref, _ops), do: :erlang.nif_error(:nif_not_loaded)
+
+  def do_ops(_ref, _ops), do: :erlang.nif_error(:nif_not_loaded)
 end
