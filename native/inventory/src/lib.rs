@@ -75,15 +75,13 @@ impl Bag {
     }
 
     pub fn incr(&self, item: Item) {
-        if self.items.contains_key(&item.token) {
-            let mut oitem = self.items.get_mut(&item.token).unwrap();
+        if let Some(mut oitem) = self.items.get_mut(&item.token) {
             oitem.amount += item.amount;
         }
     }
 
     pub fn decr(&self, item: Item) {
-        if self.items.contains_key(&item.token) {
-            let mut oitem = self.items.get_mut(&item.token).unwrap();
+        if let Some(mut oitem) = self.items.get_mut(&item.token) {
             oitem.amount -= item.amount;
             if oitem.amount == 0 {
                 self.type_indices
@@ -138,35 +136,24 @@ impl Bag {
     }
 
     pub fn amount_by_cfg_id(&self, cfg_id: u64) -> u64 {
-        let mut result: u64 = 0;
-        if self.cfg_indices.contains_key(&cfg_id) {
-            let tokens = self.cfg_indices.get(&cfg_id).unwrap();
-            for token in tokens.iter() {
-                let item = self.items.get(token).unwrap();
-                result += item.amount;
-            }
-        }
-        result
+        self.cfg_indices.get(&cfg_id).map_or(0, |tokens| {
+            tokens
+                .iter()
+                .map(|token| self.items.get(token).unwrap().amount)
+                .sum()
+        })
     }
 
     pub fn amount_by_type(&self, type_id: u32) -> u64 {
-        let mut result: u64 = 0;
-        if self.type_indices.contains_key(&type_id) {
-            let tokens = self.type_indices.get(&type_id).unwrap();
-            for token in tokens.iter() {
-                let item = self.items.get(token).unwrap();
-                result += item.amount;
-            }
-        }
-        result
+        self.type_indices.get(&type_id).map_or(0, |tokens| {
+            tokens
+                .iter()
+                .map(|token| self.items.get(token).unwrap().amount)
+                .sum()
+        })
     }
-
     pub fn to_list(&self) -> Vec<Item> {
-        let mut result: Vec<Item> = Vec::new();
-        for item in self.items.iter() {
-            result.push(item.clone());
-        }
-        result
+        self.items.iter().map(|item| item.clone()).collect()
     }
     //ops type 0: cost, 1: add
     pub fn verify_ops(&self, ops: &Vec<Op>) -> bool {
@@ -301,64 +288,35 @@ fn do_ops(resource: BagArc, term: Term) -> Result<Vec<(OpType, Item)>, Atom> {
 }
 
 fn convert_ops(term: &Term) -> Option<Vec<Op>> {
-    if term.is_list() {
-        match term.decode::<Vec<Term>>() {
-            Ok(l) => {
-                let mut ops = Vec::new();
-                for item in l {
-                    if let Ok(op) = convert_term_to_op(&item) {
-                        ops.push(op);
-                    } else {
-                        return None;
-                    }
-                }
-                Some(ops)
-            }
-            Err(_) => None,
-        }
-    } else {
-        None
-    }
+    term.decode::<Vec<Term>>()
+        .ok()?
+        .iter()
+        .map(|item| convert_term_to_op(item).ok())
+        .collect::<Option<Vec<Op>>>()
 }
 
 fn convert_term_to_op(term: &Term) -> Result<Op, Atom> {
-    if term.is_tuple() {
-        match get_tuple(*term) {
-            Ok(t) => {
-                if t.len() != 5 {
-                    return Err(atoms::unsupported_type());
-                }
-                if !t[0].is_integer() {
-                    return Err(atoms::unsupported_type());
-                }
-                if !t[1].is_binary() {
-                    return Err(atoms::unsupported_type());
-                }
-                if !t[2].is_integer() {
-                    return Err(atoms::unsupported_type());
-                }
-                if !t[3].is_integer() {
-                    return Err(atoms::unsupported_type());
-                }
-                if !t[4].is_integer() {
-                    return Err(atoms::unsupported_type());
-                }
-                let op_type: OpType = match t[0].decode().unwrap() {
-                    1 => OpType::Incr,
-                    2 => OpType::Decr,
-                    3 => OpType::New,
-                    4 => OpType::Delete,
-                    _ => return Err(atoms::unsupported_type()),
-                };
-                let token: String = t[1].decode().unwrap();
-                let type_id: u32 = t[2].decode().unwrap();
-                let cfg_id: u64 = t[3].decode().unwrap();
-                let num: u64 = t[4].decode().unwrap();
-                Ok(Op::new(op_type, token, type_id, cfg_id, num))
-            }
-            Err(_) => Err(atoms::unsupported_type()),
-        }
-    } else {
-        Err(atoms::unsupported_type())
+    if !term.is_tuple() {
+        return Err(atoms::unsupported_type());
     }
+
+    let t = get_tuple(*term).map_err(|_| atoms::unsupported_type())?;
+    if t.len() != 5 {
+        return Err(atoms::unsupported_type());
+    }
+
+    let op_type: OpType = match t[0].decode().unwrap() {
+        1 => OpType::Incr,
+        2 => OpType::Decr,
+        3 => OpType::New,
+        4 => OpType::Delete,
+        _ => return Err(atoms::unsupported_type()),
+    };
+
+    let token: String = t[1].decode().map_err(|_| atoms::unsupported_type())?;
+    let type_id: u32 = t[2].decode().map_err(|_| atoms::unsupported_type())?;
+    let cfg_id: u64 = t[3].decode().map_err(|_| atoms::unsupported_type())?;
+    let num: u64 = t[4].decode().map_err(|_| atoms::unsupported_type())?;
+
+    Ok(Op::new(op_type, token, type_id, cfg_id, num))
 }
