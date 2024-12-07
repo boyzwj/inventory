@@ -192,8 +192,10 @@ impl Bag {
         for op in ops {
             match op.op_type {
                 OpType::Decr => {
+                    let mut need_remove = false;
                     if let Some(mut item) = self.items.get_mut(&op.token) {
                         item.amount -= op.amount;
+
                         if item.amount == 0 {
                             self.type_indices
                                 .get_mut(&item.type_id)
@@ -201,11 +203,14 @@ impl Bag {
                             self.cfg_indices
                                 .get_mut(&item.cfg_id)
                                 .map(|mut set| set.remove(&item.token));
+                            need_remove = true;
                             effect_items.push((OpType::Delete, item.clone()));
-                            self.items.remove(&item.token);
                         } else {
                             effect_items.push((OpType::Decr, item.clone()));
                         }
+                    }
+                    if need_remove {
+                        self.items.remove(&op.token);
                     }
                 }
                 OpType::Incr => {
