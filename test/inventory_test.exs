@@ -50,7 +50,7 @@ defmodule InventoryTest do
     ref |> Inventory.add("a", 1, 1, 3)
     ref |> Inventory.add("c", 1, 2, 3)
     {:ok, l} = Inventory.get_by_cfg_id(ref, 2)
-    assert l|> Enum.sort == [{"b", 1, 2, 2}, {"c", 1, 2, 3}]
+    assert l |> Enum.sort() == [{"b", 1, 2, 2}, {"c", 1, 2, 3}]
   end
 
   test "verify_ops" do
@@ -60,11 +60,11 @@ defmodule InventoryTest do
     ref |> Inventory.add("c", 1, 1, 5)
     ref |> Inventory.add("d", 1, 1, 5)
 
-    ops1 = [{2,"a",1,1,5}, {2,"b",1,1,5}, {2,"d",1,1,5}]
-    ops2 = [{2,"a",1,1,7}]
-
+    ops1 = [{2, "a", 1, 1, 5}, {2, "b", 1, 1, 5}, {2, "d", 1, 1, 5}]
+    ops2 = [{2, "a", 1, 1, 7}]
+    ops3 = [{2, "a", 1, 1, 5}, {2, "a", 1, 1, 5}]
     assert Inventory.verify_ops(ref, ops1) == true
     assert Inventory.verify_ops(ref, ops2) == false
+    assert Inventory.verify_ops(ref, ops3) == false
   end
-
 end

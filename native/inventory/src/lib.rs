@@ -7,6 +7,7 @@ mod item;
 use crate::item::Item;
 use crate::item::Op;
 use crate::item::OpType;
+use std::collections::HashMap;
 mod atoms {
     rustler::atoms! {
         // Common Atoms
@@ -157,16 +158,30 @@ impl Bag {
     }
     //ops type 0: cost, 1: add
     pub fn verify_ops(&self, ops: &Vec<Op>) -> bool {
+        let mut decr_ops: HashMap<String, u64> = HashMap::new();
         for op in ops {
             if op.op_type == OpType::Decr {
-                match self.items.get(&op.token) {
-                    Some(item) => {
-                        if item.amount < op.amount {
-                            return false;
-                        }
+                match decr_ops.get(&op.token) {
+                    Some(v) => {
+                        let new_amount = v + op.amount;
+                        decr_ops.insert(op.token.clone(), new_amount);
                     }
-                    None => return false,
+
+                    None => {
+                        decr_ops.insert(op.token.clone(), op.amount);
+                    }
                 }
+            }
+        }
+
+        for (token, need) in &decr_ops {
+            match self.items.get(token) {
+                Some(item) => {
+                    if item.amount < *need {
+                        return false;
+                    }
+                }
+                None => return false,
             }
         }
         return true;
