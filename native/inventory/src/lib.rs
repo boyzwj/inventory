@@ -202,6 +202,7 @@ impl Bag {
                                 .get_mut(&item.cfg_id)
                                 .map(|mut set| set.remove(&item.token));
                             effect_items.push((OpType::Delete, item.clone()));
+                            self.items.remove(&item.token);
                         } else {
                             effect_items.push((OpType::Decr, item.clone()));
                         }
