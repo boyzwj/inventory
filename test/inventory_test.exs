@@ -67,4 +67,13 @@ defmodule InventoryTest do
     assert Inventory.verify_ops(ref, ops2) == false
     assert Inventory.verify_ops(ref, ops3) == false
   end
+
+  test "do_ops" do
+    {:ok, ref} = Inventory.new()
+    ref |> Inventory.add("a", 1, 1, 5)
+    ref |> Inventory.do_ops([{2, "a", 1, 1, 5}])
+    assert Inventory.get_by_cfg_id(ref, 1) == {:ok, []}
+    ref |> Inventory.do_ops([{1, "a", 1, 1, 5}])
+    assert Inventory.get_by_cfg_id(ref, 1) == {:ok, [{"a", 1, 1, 5}]}
+  end
 end
